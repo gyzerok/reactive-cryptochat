@@ -2,16 +2,16 @@
 
 require('./BigNumber');
 
-// Log for debugging
-var log = function (value) { console.log(value.toString()); };
-
+// Random numbers stream
 var numbers = Bacon.fromPoll(10, function () {
     var str = '' + Math.floor(Math.random() * 9 + 1);
     for (var i = 0; i < 2 - 1; i++) str += Math.floor(Math.random() * 9);
     return BigNumber(str);
 });
 
+// BigNumber equality function
 var eq = function (a, b) { return a.eq(b) };
+
 var primes = numbers.skipDuplicates(eq)
     .filter(function (n) {
         var i = BigNumber(2);
@@ -22,11 +22,8 @@ var primes = numbers.skipDuplicates(eq)
         return true;
     });
 
+// p and q pairs stream
 var pqpairs = primes.skipDuplicates(eq).slidingWindow(2, 2);
-
-var m = pqpairs.map(function (pair) {
-    return pair[0].times(pair[1]);
-});
 
 var n = pqpairs.map(function (pair) {
     return pair[0].minus(1).times(pair[1].minus(1));
@@ -69,6 +66,10 @@ var d = Bacon.combineWith(function (n, e) {
     }
 }, n, e);
 
+var m = pqpairs.map(function (pair) {
+    return pair[0].times(pair[1]);
+});
+
 var rsa = Bacon.combineTemplate({ e: e, d: d, m: m })
     .filter(function (obj) {
         return obj.d.gt(0);
@@ -79,7 +80,9 @@ var rsa = Bacon.combineTemplate({ e: e, d: d, m: m })
     .take(1);
 
 rsa.onValue(function (obj) {
-    console.log(obj.e.toString(), obj.d.toString(), obj.m.toString())
+    console.log('e:', obj.e.toString());
+    console.log('d:', obj.d.toString());
+    console.log('m:', obj.m.toString());
 });
 
 var symbols = Bacon.constant('qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM,.!? ');

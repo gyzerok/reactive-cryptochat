@@ -18,14 +18,14 @@ var conns = Bacon.fromBinder(function (sink) {
     io.on('connect', sink);
 });
 
-var encryptedMessages = conns.flatMap(function (socket) {
+var messages = conns.flatMap(function (socket) {
     return Bacon.fromBinder(function (sink) {
         socket.on('message', sink);
     });
 });
 
 var rsa = require('./rsa');
-var decryptedMessages = rsa.decryptor(rsa.encryptor(encryptedMessages, rsa.rsa));
+var decryptedMessages = rsa.decryptor(rsa.encryptor(messages, rsa.rsa));
 
 decryptedMessages.onValue(function (text) {
     console.log(text);
