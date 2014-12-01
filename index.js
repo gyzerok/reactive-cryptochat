@@ -17,9 +17,9 @@ var Bacon = require('baconjs').Bacon;
 // Log for debugging
 var log = function (value) { console.log(value.toString()); };
 
-var numbers = Bacon.fromPoll(10, function () {
+var numbers = Bacon.fromPoll(100, function () {
     var str = '' + Math.floor(Math.random() * 9 + 1);
-    for (var i = 0; i < 3 - 1; i++) str += Math.floor(Math.random() * 9);
+    for (var i = 0; i < 2 - 1; i++) str += Math.floor(Math.random() * 9);
     return BigNumber(str);
 });
 
@@ -34,28 +34,21 @@ var primes = numbers.skipDuplicates(eq)
         return true;
     }).skipDuplicates(eq);
 
-var p = primes.take(1).toProperty();
-p.onValue(log);
-var q = primes.skip(1).take(1).toProperty();
-q.onValue(log);
+var pqpairs = primes.slidingWindow(2, 2);
 
-var m = Bacon.combineWith(function (p, q) {
-    return p.times(q);
-}, p, q);
-m.onValue(log);
+var m = pqpairs.map(function (pair) {
+    return pair[0].times(pair[1]);
+});
 
-var n = Bacon.combineWith(function (p, q) {
-    return p.minus(1).times(q.minus(1));
-}, p, q);
-n.onValue(log);
+var n = pqpairs.map(function (pair) {
+    return pair[0].minus(1).times(pair[1].minus(1));
+});
 
-// Public key
 var e = n.map(function (n) {
     var e = BigNumber(3);
     while (!e.gcd(n).eq(1)) e = e.plus(1);
     return e;
 });
-e.onValue(log);
 
 var d = Bacon.combineWith(function (n, e) {
     var E = [
@@ -87,7 +80,64 @@ var d = Bacon.combineWith(function (n, e) {
         b = r;
     }
 }, n, e);
-d.onValue(log);
+
+var rsa = Bacon.combineTemplate({
+    e: e,
+    d: d,
+    m: m
+});
+rsa.filter(function (obj) {
+    return obj.d.gt(0);
+}).take(1).log();
+
+/*var p = primes.take(1).toProperty();
+var q = primes.skip(1).take(1).toProperty();
+
+var m = Bacon.combineWith(function (p, q) {
+    return p.times(q);
+}, p, q);
+
+var n = Bacon.combineWith(function (p, q) {
+    return p.minus(1).times(q.minus(1));
+}, p, q);
+
+// Public key
+var e = n.map(function (n) {
+    var e = BigNumber(3);
+    while (!e.gcd(n).eq(1)) e = e.plus(1);
+    return e;
+});
+
+var d = Bacon.combineWith(function (n, e) {
+    var E = [
+        [BigNumber(1), BigNumber(0)],
+        [BigNumber(0), BigNumber(1)]
+    ];
+
+    var a = n;
+    var b = e;
+
+    while (true) {
+        var r = a.mod(b);
+        if (r.eq(0)) return E[1][1];
+        var q = a.div(b).floor();
+        var tmp = [
+            [BigNumber(0), BigNumber(0)],
+            [BigNumber(0), BigNumber(0)]
+        ];
+        var newE = [
+            [BigNumber(0), BigNumber(1)],
+            [BigNumber(1), q.neg()]
+        ];
+        for (var i = 0; i < 2; i++)
+            for (var j = 0; j < 2; j++)
+                for (var k = 0; k < 2; k++)
+                    tmp[i][j] = tmp[i][j].plus(E[i][k].times(newE[k][j]));
+        E = tmp;
+        a = b;
+        b = r;
+    }
+}, n, e);
 
 /*var conns = Bacon.fromBinder(function (sink) {
     io.on('connect', sink);
