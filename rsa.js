@@ -69,11 +69,7 @@ var d = Bacon.combineWith(function (n, e) {
     }
 }, n, e);
 
-var rsa = Bacon.combineTemplate({
-        e: e,
-        d: d,
-        m: m
-    })
+var rsa = Bacon.combineTemplate({ e: e, d: d, m: m })
     .filter(function (obj) {
         return obj.d.gt(0);
     })
@@ -86,4 +82,27 @@ rsa.onValue(function (obj) {
     console.log(obj.e.toString(), obj.d.toString(), obj.m.toString())
 });
 
-module.exports = rsa;
+var symbols = Bacon.constant('qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM,.!? ');
+
+module.exports = {
+    rsa: rsa,
+    encryptor: function (stream, rsa) {
+        return Bacon.combineWith(function (str, rsa, symbols) {
+            return _.map(str, function (char) {
+                var i = symbols.indexOf(char);
+                i = BigNumber(i);
+                return i.powm(rsa.e, rsa.m).toString();
+            });
+        }, stream, rsa, symbols);
+    },
+
+    decryptor: function (stream) {
+        return Bacon.combineWith(function (data, rsa, symbols) {
+            return _.reduce(data, function (memo, el) {
+                el = BigNumber(el);
+                var i = el.powm(rsa.d, rsa.m);
+                return memo + symbols[i];
+            }, '');
+        }, stream, rsa, symbols);
+    }
+};

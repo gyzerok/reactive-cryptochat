@@ -1,6 +1,7 @@
 'use strict';
 
 global.Bacon = require('baconjs').Bacon;
+global._ = require('lodash');
 
 var express = require('express');
 var app = express();
@@ -23,31 +24,8 @@ var encryptedMessages = conns.flatMap(function (socket) {
     });
 });
 
-var _ = require('lodash');
-
-var encrypt = function (str, e, m) {
-    var symbols = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM,.!? ';
-    return _.map(str, function (char) {
-        var i = symbols.indexOf(char);
-        i = BigNumber(i);
-        return i.powm(e, m).toString();
-    });
-};
-
-var decrypt = function (data, d, m) {
-    var symbols = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM,.!? ';
-    return _.reduce(data, function (memo, el) {
-        el = BigNumber(el);
-        var i = el.powm(d, m);
-        return memo + symbols[i];
-    }, '');
-};
-
 var rsa = require('./rsa');
-var decryptedMessages = Bacon.combineWith(function (data, rsa) {
-    data = encrypt(data, rsa.e, rsa.m);
-    return decrypt(data, rsa.d, rsa.m);
-}, encryptedMessages, rsa);
+var decryptedMessages = rsa.decryptor(rsa.encryptor(encryptedMessages, rsa.rsa));
 
 decryptedMessages.onValue(function (text) {
     console.log(text);
