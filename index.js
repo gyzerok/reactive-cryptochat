@@ -87,8 +87,14 @@ var rsa = Bacon.combineTemplate({
     m: m
 });
 rsa.filter(function (obj) {
-    return obj.d.gt(0);
-}).take(1).log();
+        return obj.d.gt(0);
+    })
+    .filter(function (obj) {
+        return !obj.e.eq(obj.d);
+    })
+    .take(1).onValue(function (obj) {
+        console.log(obj.e.toString(), obj.d.toString(), obj.m.toString())
+    });
 
 /*var p = primes.take(1).toProperty();
 var q = primes.skip(1).take(1).toProperty();
