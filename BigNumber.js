@@ -33,6 +33,16 @@ BigNumber.prototype.gcd = function (y) {
     return x.abs();
 };
 
+BigNumber.prototype.isPrime = function () {
+    var n = new BigNumber(this);
+    var i = BigNumber(2);
+    while (i < 13) {
+        if (!i.powm(n, n).eq(i.mod(n))) return false;
+        i = i.plus(1);
+    }
+    return true;
+};
+
 module.exports = (function () {
     global.BigNumber = BigNumber;
 })();

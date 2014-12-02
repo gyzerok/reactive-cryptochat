@@ -2,28 +2,22 @@
 
 require('./BigNumber');
 
-// Random numbers stream
-var numbers = Bacon.fromPoll(10, function () {
+var randomBigNumber = function () {
     var str = '' + Math.floor(Math.random() * 9 + 1);
-    for (var i = 0; i < 2 - 1; i++) str += Math.floor(Math.random() * 9);
+    for (var i = 0; i < 2 - 1; i++) str += (Math.random() * 9).toFixed(0);
     return BigNumber(str);
+};
+
+var randoms = Bacon.fromPoll(10, randomBigNumber);
+
+var primes = randoms.filter(function (n) {
+    return n.isPrime();
 });
 
-// BigNumber equality function
-var eq = function (a, b) { return a.eq(b) };
-
-var primes = numbers.skipDuplicates(eq)
-    .filter(function (n) {
-        var i = BigNumber(2);
-        while (i < 13) {
-            if (!i.powm(n, n).eq(i.mod(n))) return false;
-            i = i.plus(1);
-        }
-        return true;
-    });
-
 // p and q pairs stream
-var pqpairs = primes.skipDuplicates(eq).slidingWindow(2, 2);
+var pqpairs = primes.skipDuplicates(function (x, y) {
+    return x.eq(y);
+}).slidingWindow(2, 2);
 
 var n = pqpairs.map(function (pair) {
     return pair[0].minus(1).times(pair[1].minus(1));
@@ -44,9 +38,8 @@ var d = Bacon.combineWith(function (n, e) {
     var a = n;
     var b = e;
 
-    while (true) {
-        var r = a.mod(b);
-        if (r.eq(0)) return E[1][1];
+    var r = a.mod(b);
+    while (!r.eq(0)) {
         var q = a.div(b).floor();
         var tmp = [
             [BigNumber(0), BigNumber(0)],
@@ -63,7 +56,9 @@ var d = Bacon.combineWith(function (n, e) {
         E = tmp;
         a = b;
         b = r;
+        r = a.mod(b);
     }
+    return E[1][1];
 }, n, e);
 
 var m = pqpairs.map(function (pair) {
