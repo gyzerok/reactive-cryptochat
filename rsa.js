@@ -47,10 +47,7 @@ function generateD(n, e) {
 }
 
 var randoms = Bacon.fromPoll(10, randomBigNumber);
-
-var primes = randoms.filter(function (n) {
-    return n.isPrime();
-});
+var primes = randoms.filter(function (n) { return n.isPrime(); });
 
 // p and q pairs stream
 var pqpairs = primes.skipDuplicates(function (x, y) {
@@ -58,21 +55,23 @@ var pqpairs = primes.skipDuplicates(function (x, y) {
 }).slidingWindow(2, 2);
 
 var n = pqpairs.map(function (pair) {
-    return pair[0].minus(1).times(pair[1].minus(1));
+    var p = pair[0], q = pair[1];
+    return p.minus(1).times(q.minus(1));
 });
 
 var e = n.map(generateE);
 var d = Bacon.combineWith(generateD, n, e);
 var m = pqpairs.map(function (pair) {
-    return pair[0].times(pair[1]);
+    var p = pair[0], q = pair[1];
+    return p.times(q);
 });
 
 var rsa = Bacon.combineTemplate({ e: e, d: d, m: m })
-    .filter(function (obj) {
-        return obj.d.gt(0);
+    .filter(function (rsa) {
+        return rsa.d.gt(0);
     })
     .filter(function (obj) {
-        return !obj.e.eq(obj.d);
+        return !rsa.e.eq(obj.d);
     })
     .take(1);
 
