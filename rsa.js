@@ -3,7 +3,7 @@
 require('./BigNumber');
 
 function randomBigNumber() {
-    var str = '' + Math.floor(Math.random() * 9 + 1);
+    var str = '' +(Math.random() * 9 + 1).toFixed(0);
     for (var i = 0; i < 2 - 1; i++) str += (Math.random() * 9).toFixed(0);
     return BigNumber(str);
 }
@@ -70,10 +70,11 @@ var rsa = Bacon.combineTemplate({ e: e, d: d, m: m })
     .filter(function (rsa) {
         return rsa.d.gt(0);
     })
-    .filter(function (obj) {
-        return !rsa.e.eq(obj.d);
+    .filter(function (rsa) {
+        return !rsa.e.eq(rsa.d);
     })
-    .take(1);
+    .take(1)
+    .toProperty();
 
 rsa.onValue(function (obj) {
     console.log('e:', obj.e.toString());
@@ -83,25 +84,28 @@ rsa.onValue(function (obj) {
 
 var symbols = Bacon.constant('qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM,.!? ');
 
+function encrypt(str, rsa, symbols) {
+    return _.map(str, function (char) {
+        var i = symbols.indexOf(char);
+        i = BigNumber(i);
+        return i.powm(rsa.e, rsa.m).toString();
+    });
+}
+
+function decrypt(data, rsa, symbols) {
+    return _.reduce(data, function (memo, el) {
+        el = BigNumber(el);
+        var i = el.powm(rsa.d, rsa.m);
+        return memo + symbols[i];
+    }, '');
+}
+
 module.exports = {
     rsa: rsa,
     encryptor: function (stream, rsa) {
-        return Bacon.combineWith(function (str, rsa, symbols) {
-            return _.map(str, function (char) {
-                var i = symbols.indexOf(char);
-                i = BigNumber(i);
-                return i.powm(rsa.e, rsa.m).toString();
-            });
-        }, stream, rsa, symbols);
+        return Bacon.combineWith(encrypt, stream, rsa, symbols);
     },
-
     decryptor: function (stream) {
-        return Bacon.combineWith(function (data, rsa, symbols) {
-            return _.reduce(data, function (memo, el) {
-                el = BigNumber(el);
-                var i = el.powm(rsa.d, rsa.m);
-                return memo + symbols[i];
-            }, '');
-        }, stream, rsa, symbols);
+        return Bacon.combineWith(decrypt, stream, rsa, symbols);
     }
 };
