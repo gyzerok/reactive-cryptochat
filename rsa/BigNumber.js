@@ -43,6 +43,4 @@ BigNumber.prototype.isPrime = function () {
     return true;
 };
 
-module.exports = (function () {
-    global.BigNumber = BigNumber;
-})();
+module.exports = BigNumber;
