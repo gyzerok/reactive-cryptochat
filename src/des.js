@@ -220,12 +220,14 @@ function desChunk(chunk: Binary, key: string, ecnrypt: boolean): Binary {
 }
 
 function encrypt(str: string, key: string): string {
+    var mod = 8 - str.length % 8;
+    for (var i = 0; i < mod; i++) str += '.';
     var bits = splitStr(str);
     var chunks = _(bits)
         .chunk(64)
         .map(chunk => desChunk(chunk, key, true))
         .value();
-    return joinStr(chunks);
+    return _.trim(joinStr(chunks));
 }
 
 function decrypt(str: string, key: string): string {
@@ -234,7 +236,7 @@ function decrypt(str: string, key: string): string {
         .chunk(64)
         .map(chunk => desChunk(chunk, key, false))
         .value();
-    return joinStr(chunks);
+    return _.trim(joinStr(chunks));
 }
 
 module.exports = {
@@ -243,7 +245,7 @@ module.exports = {
 };
 
 var key = 'hello!!!';
-var a = encrypt('hello123', key);
+var a = encrypt('hello', key);
 console.log(a);
 var b = decrypt(a, key);
 console.log(b);
