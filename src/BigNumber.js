@@ -43,6 +43,18 @@ BigNumber.prototype.isPrime = function () {
     return true;
 };
 
-module.exports = (function () {
-    global.BigNumber = BigNumber;
-})();
+BigNumber.random(count) {
+    var str = '' + (Math.random() * 9 + 1).toFixed(0);
+    for (var i = 0; i < count - 1; i++) str += (Math.random() * 9).toFixed(0);
+    return BigNumber(str);
+}
+
+BigNumber.randomPrime(count) {
+    var x;
+    do {
+        x = BigNumber.random(count);
+    } while (!x.isPrime());
+    return x;
+}
+
+module.exports = BigNumber;

@@ -1,6 +1,6 @@
 'use strict';
 
-require('./BigNumber');
+var BigNumber = require('./BigNumber');
 
 function randomBigNumber() {
     var str = '' +(Math.random() * 9 + 1).toFixed(0);
@@ -44,6 +44,16 @@ function generateD(n, e) {
         r = a.mod(b);
     }
     return E[1][1];
+}
+
+function createKey() {
+    var p = BigNumber.randomPrime(7);
+    var q = BigNumber.randomPrime(7);
+    var n = p.minus(1).times(q.minus(1));
+
+    var e = generateE(n);
+    var d = generateD(n, e);
+    var m = p.times(q);
 }
 
 var randoms = Bacon.fromPoll(10, randomBigNumber);
